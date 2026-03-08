@@ -1,4 +1,4 @@
-  const http = require("http");
+const http = require("http");
   const { query } = require("@anthropic-ai/claude-agent-sdk");
 
   const sessions = {};
@@ -100,6 +100,7 @@
                   tasks[taskId] = {
                       status: "queued",
                       prompt: request.prompt,
+                      description: request.prompt.substring(0, 100),
                       session: sessionName,
                       queued_at: Date.now(),
                       turns: 0,
@@ -165,6 +166,22 @@
                   res.writeHead(200, { "Content-Type": "application/json" });
                   res.end(JSON.stringify({ sessions }));
 
+              } else if (action === "list_sessions") {
+                  const sessionNames = Object.keys(sessions);
+                  res.writeHead(200, { "Content-Type": "application/json" });
+                  res.end(JSON.stringify({ sessions: sessionNames }));
+
+              } else if (action === "list_tasks") {
+                  const taskList = {};
+                  for (const [id, t] of Object.entries(tasks)) {
+                      taskList[id] = {
+                          status: t.status,
+                          started_at: t.started_at || null
+                      };
+                  }
+                  res.writeHead(200, { "Content-Type": "application/json" });
+                  res.end(JSON.stringify({ tasks: taskList }));
+
               } else {
                   res.writeHead(200, { "Content-Type": "application/json" });
                   res.end(JSON.stringify({ error: "Unknown action" }));
@@ -191,6 +208,10 @@
       console.log("");
       console.log("  list:     POST { action: 'list' }");
       console.log("  sessions: POST { action: 'sessions' }");
+      console.log("  list_sessions: POST { action: 'list_sessions' }");
+      console.log("                 Returns { sessions: [name1, name2, ...] }");
+      console.log("  list_tasks:    POST { action: 'list_tasks' }");
+      console.log("                 Returns { tasks: { id: { status, started_at }, ... } }");
       console.log("");
       console.log("Ready.");
   });
